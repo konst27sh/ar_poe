@@ -1,0 +1,165 @@
+//
+// Created by sheverdin on 5/16/25.
+//
+
+#ifndef TF_AUTORESTART_PORT_MANAGER_H
+#define TF_AUTORESTART_PORT_MANAGER_H
+
+/**
+ * @file port_manager.h
+ * @brief Управление параметрами и состоянием PoE-портов
+ */
+
+#include <stdint.h>
+#include <time.h>
+#include "../../global_includs.h"
+
+
+#define MAX_HOST_LEN      16
+#define MAX_TIME_STR_LEN  32
+
+typedef enum
+{
+    IDLE_STATE       = 0,
+    REGULAR_STATE    = 1,
+    REBOOT_STATE     = 2,
+    MAX_AR_STATE
+}AR_STATE;
+
+typedef enum
+{
+    REBOOT_STATE_IDLE        = 0,
+    REBOOT_STATE_INIT        = 1,
+    REBOOT_STATE_POE_DOWN    = 2,
+    REBOOT_STATE_POE_UP      = 3
+}REBOOT_STATE_e;
+
+typedef enum {
+    PORT_STATE_DISABLED,
+    PORT_STATE_ENABLED
+} PortState;
+
+typedef enum {
+    POE_STATE_OFF,
+    POE_STATE_ON
+} PoeState;
+
+typedef enum
+{
+    time_up         = 0,
+    time_down       = 1,
+    time_alarm_max  = 2
+}TIME_ALARM_INDEX_e;
+
+typedef struct
+{
+    bool_t  status;
+    uint8_t time_H;
+    uint8_t time_M;
+    uint32_t targetTime;
+    uint32_t remainTime;
+}time_h_m;
+
+typedef struct {
+    uint8_t portNum;
+    TestType testType;
+    bool_t alarm;
+    char host[MAX_HOST_LEN];
+    uint32_t minSpeed;
+    uint32_t maxSpeed;
+    time_h_m timeAlarm[time_alarm_max];
+} PortConfig;
+
+typedef struct {
+    PortState portState;
+    PoeState poeState;
+    uint32_t rxBytes;
+    uint32_t txBytes;
+} PortStatus;
+
+typedef struct {
+    uint8_t rebootCount;
+    time_t lastRebootTime;
+    uint32_t rebootDelay;
+    REBOOT_STATE_e rebootState;
+} RebootInfo;
+
+typedef struct {
+    uint8_t resetCount;
+    uint8_t totalResetCount;
+    error_code_t errorCode;
+    uint32_t lastTestTime;
+} PortTestInfo;
+
+typedef struct {
+    PortConfig config;
+    PortStatus status;
+    PortTestInfo testInfo;
+    RebootInfo rebootInfo;
+} PortFullInfo;
+
+/**
+ * @brief Инициализирует все порты
+ */
+void port_manager_init();
+
+/**
+ * @brief Получает конфигурацию порта
+ * @param portNum Номер порта (0-based)
+ * @param[out] config Буфер для конфигурации
+ * @return 0 при успехе, -1 при ошибке
+ */
+
+int port_manager_get_config(uint8_t portNum, PortConfig *config);
+
+/**
+ * @brief Устанавливает состояние PoE
+ * @param portNum Номер порта (0-based)
+ * @param state Новое состояние
+ * @return 0 при успехе, -1 при ошибке
+ */
+int port_manager_set_poe(uint8_t portNum, PoeState state);
+
+/**
+ * @brief Получает текущее состояние порта
+ * @param port_num Номер порта (0-based)
+ * @param[out] status Буфер для состояния
+ * @return 0 при успехе, -1 при ошибке
+ */
+int port_manager_get_status(uint8_t port_num, PortStatus *status);
+
+/**
+ * @brief
+ * @param
+ * @param[out]
+ */
+void port_manager_log_state(void);
+
+
+/**
+ * @brief Обновляет статистику порта
+ * @param portNum Номер порта (0-based)
+ */
+void port_manager_load_config(void);
+void port_manager_update_config(uint8_t port_idx, const PortConfig* config);
+void port_manager_init_reboot_info(void);
+
+void port_manager_auto_reset(uint8_t portNum, error_code_t error, uint8_t maxReset);
+AR_STATE port_manager_get_ar_state(uint8_t portNum);
+
+error_code_t port_run_test_link(uint8_t portNum);
+error_code_t port_run_test_ping(uint8_t portNum);
+error_code_t port_run_test_speed(uint8_t portNum);
+
+const char* test_type_to_str(TestType type);
+void port_manager_log_all_configs(void);
+
+
+void port_handle_reboot(uint8_t portNum, uint8_t maxReset);
+bool_t port_manager_check_state(uint8_t portNum);
+
+
+
+
+
+#endif //TF_AUTORESTART_PORT_MANAGER_H
