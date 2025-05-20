@@ -98,7 +98,7 @@ void update_config(const char* section_name)
             "ubus call uci get '{\"config\":\"tf_autorestart\", \"section\":\"%s:w\"}'",section_name);
     if (root != NULL)
     {
-        config_load_section("tf_autorestart", section_name);
+        config_load_section("tf_autorestart", section_name, CONFIG_SECTION_PORT);
         json_decref(root);
     }
 }

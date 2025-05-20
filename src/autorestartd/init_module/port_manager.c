@@ -50,10 +50,9 @@ void port_manager_load_config(void)
 
         char section[16];
         snprintf(section, sizeof(section), "lan%d", i+1);
-        config_load_section("tf_autorestart", section);
+        config_load_section("tf_autorestart", section, CONFIG_SECTION_PORT);
         cfg.portNum = i+1;
 
-        // Получение параметров
         json_t *values = config_get_section(section);
         if (values) {
             // Mode

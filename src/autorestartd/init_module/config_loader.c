@@ -30,12 +30,12 @@ typedef struct
 }ConfigParamDef;
 
 // Таблица параметров с валидацией
-static const ConfigParamDef param_defs[] =
+static const ConfigParamDef global_param_defs[] =
 {
     {"test_delay", 1,  60,  3},
     {"test_num",   1,  100, 10},
     {"max_reset",  1,  20,  3},
-    {"main_time",  0,  0,   0}  // Особый случай
+    {"main_time",  0,  0,   0}
 };
 
 Timer global_timer;
@@ -89,55 +89,35 @@ static int parse_json_param(json_t* values, const char* param_name, char* value)
  * @param config_name Имя конфига (например, "tf_autorestart")
  * @param section_name Имя секции (например, "ar_demon")
  */
-// config_loader.c
-void config_load_section(const char *config_name, const char *section_name) {
+void config_load_section(const char *config_name, const char *section_name, ConfigSectionType sect_type)
+{
     char cmd[128];
     char response[MAX_UBUS_RESPONSE] = {0};
     FILE *pipe = NULL;
 
-    // Генерация команды с проверкой длины
-    if (snprintf(cmd, sizeof(cmd), UBUS_CMD_TEMPLATE, config_name, section_name) < 0) {
-        syslog(LOG_CRIT, "Command buffer overflow");
+    // Генерация UBUS команды
+    snprintf(cmd, sizeof(cmd), UBUS_CMD_TEMPLATE, config_name, section_name);
+    pipe = popen(cmd, "r");
+    if (!pipe) {
+        syslog(LOG_CRIT, "Failed to execute command: %s", cmd);
         return;
     }
 
-    syslog(LOG_DEBUG, "Executing UBUS command: %s", cmd);
-
-    // Открытие pipe с обработкой ошибок
-    if ((pipe = popen(cmd, "r")) == NULL) {
-        syslog(LOG_CRIT, "Failed to execute command: %s (errno=%d)", cmd, errno);
-        return;
+    // Чтение ответа
+    char chunk[64];
+    while (fgets(chunk, sizeof(chunk), pipe)) {
+        strncat(response, chunk, sizeof(response) - strlen(response) - 1);
     }
+    pclose(pipe);
 
-    // Безопасное чтение ответа
-    size_t total_read = 0;
-    char *ptr = response;
-    while (fgets(ptr, sizeof(response) - total_read, pipe)) {
-        size_t len = strlen(ptr);
-        total_read += len;
-        ptr += len;
-
-        if (total_read >= sizeof(response) - 1) {
-            syslog(LOG_WARNING, "UBUS response truncated");
-            break;
-        }
-    }
-
-    // Закрытие pipe
-    int status = pclose(pipe);
-    if (status != 0) {
-        syslog(LOG_ERR, "Command failed with status %d", WEXITSTATUS(status));
-    }
-
-    // Валидация JSON
+    // Парсинг JSON
     json_error_t error;
     json_t *root = json_loads(response, 0, &error);
     if (!root) {
-        syslog(LOG_ERR, "JSON parse error: %s (line %d)", error.text, error.line);
+        syslog(LOG_ERR, "JSON error: %s (line %d)", error.text, error.line);
         return;
     }
 
-    // Получение объекта values
     json_t *values = json_object_get(root, "values");
     if (!json_is_object(values)) {
         syslog(LOG_ERR, "Invalid 'values' object");
@@ -145,22 +125,28 @@ void config_load_section(const char *config_name, const char *section_name) {
         return;
     }
 
-    // Обработка параметров
-    for (size_t i = 0; i < MAX_PARAMS; i++)
+    // Обработка в зависимости от типа секции
+    switch(sect_type)
     {
-        const ConfigParamDef *def = &param_defs[i];
-        char value_str[MAX_PARAM_VALUE] = {0};
+        case CONFIG_SECTION_DEMON:
+        {
+            // Парсинг глобальных параметров
+            for (size_t i = 0; i < MAX_PARAMS; i++)
+            {
+                const ConfigParamDef *def = &global_param_defs[i];
+                char value_str[MAX_PARAM_VALUE] = {0};
 
-        if (parse_json_param(values, def->name, value_str) == 0) {
-            global_config[i].value = (int)strtol(value_str, NULL, 10);
-            syslog(LOG_DEBUG, "Loaded param %s = %d", def->name, global_config[i].value);
-        } else {
-            global_config[i].value = def->default_val;
-            syslog(LOG_WARNING, "Using default value for %s: %d",
-                   def->name, def->default_val);
+                if (parse_json_param(values, def->name, value_str) == 0) {
+                    global_config[i].value = (int)strtol(value_str, NULL, 10);
+                    syslog(LOG_DEBUG, "Global param %s = %d", def->name, global_config[i].value);
+                } else {
+                    global_config[i].value = def->default_val;
+                    syslog(LOG_WARNING, "Using default for %s: %d", def->name, def->default_val);
+                }
+            }
+            break;
         }
     }
-
     json_decref(root);
 }
 
@@ -240,7 +226,7 @@ static int parse_config_from_json(const char *json_str) {
 int config_load_main(void)
 {
     syslog(LOG_DEBUG, "Loading main config...");
-    config_load_section("tf_autorestart", "ar_demon");
+    config_load_section("tf_autorestart", "ar_demon", CONFIG_SECTION_DEMON);
     return 0;
 }
 

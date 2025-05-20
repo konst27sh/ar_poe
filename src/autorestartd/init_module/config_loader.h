@@ -15,6 +15,11 @@
 
 #define MAX_PARAMS 4
 
+typedef enum {
+    CONFIG_SECTION_DEMON,
+    CONFIG_SECTION_PORT
+} ConfigSectionType;
+
 typedef struct
 {
     const char *name;
@@ -35,7 +40,7 @@ typedef struct {
 extern Timer global_timer;
 
 int config_load_main(void);
-void config_load_section(const char *config_name, const char *section_name);
+void config_load_section(const char *config_name, const char *section_name, ConfigSectionType sect_type);
 int config_get_value(const char *param_name);
 void config_loader_log_state(void);
 json_t* config_get_section(const char* section_name);
