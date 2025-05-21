@@ -18,9 +18,7 @@
 #define UBUS_CMD_TEMPLATE    "ubus call uci get '{\"config\":\"%s\", \"section\":\"%s\"}'"
 #define MAX_UBUS_RESPONSE    512
 #define MAX_PARAM_NAME       32
-#define MAX_PARAM_VALUE      16
 
-// Структура для хранения параметров
 typedef struct
 {
     const char *name;
@@ -40,22 +38,23 @@ static const ConfigParamDef global_param_defs[] =
 
 Timer global_timer;
 
-config_type init_configOptions[MAX_PARM] = {
+config_type init_configOptions[MAX_PARM] =
+{
     {
-            .optionName = "test_delay",
-            .value    = 0,
+        .optionName = "test_delay",
+        .value    = 0,
     },
     {
-            .optionName = "test_num",
-            .value = 0,
+        .optionName = "test_num",
+        .value = 0,
     },
     {
-            .optionName = "max_reset",
-            .value = 0,
+        .optionName = "max_reset",
+        .value = 0,
     },
     {
-            .optionName = "main_time",
-            .value = 0,
+        .optionName = "main_time",
+        .value = 0,
     }
 };
 
@@ -68,8 +67,9 @@ static ConfigEntry global_config[MAX_PARAMS];
  * @param param_name Имя параметра
  * @param[out] value Буфер для значения
  * @return 0 при успехе, -1 при ошибке
+ *
  */
-static int parse_json_param(json_t* values, const char* param_name, char* value)
+int parse_json_param(json_t* values, const char* param_name, char* value)
 {
     if (values == NULL || param_name == NULL || value == NULL)
     {
@@ -89,88 +89,67 @@ static int parse_json_param(json_t* values, const char* param_name, char* value)
  * @param config_name Имя конфига (например, "tf_autorestart")
  * @param section_name Имя секции (например, "ar_demon")
  */
-void config_load_section(const char *config_name, const char *section_name, ConfigSectionType sect_type)
+json_t* config_load_section(const char *config_name, const char *section_name)
 {
     char cmd[128];
     char response[MAX_UBUS_RESPONSE] = {0};
     FILE *pipe = NULL;
 
-    // Генерация UBUS команды
     snprintf(cmd, sizeof(cmd), UBUS_CMD_TEMPLATE, config_name, section_name);
     pipe = popen(cmd, "r");
-    if (!pipe) {
-        syslog(LOG_CRIT, "Failed to execute command: %s", cmd);
-        return;
-    }
+    if (!pipe) return NULL;
 
-    // Чтение ответа
-    char chunk[64];
+    char chunk[128];
     while (fgets(chunk, sizeof(chunk), pipe)) {
         strncat(response, chunk, sizeof(response) - strlen(response) - 1);
     }
     pclose(pipe);
 
-    // Парсинг JSON
     json_error_t error;
-    json_t *root = json_loads(response, 0, &error);
-    if (!root) {
-        syslog(LOG_ERR, "JSON error: %s (line %d)", error.text, error.line);
-        return;
-    }
-
-    json_t *values = json_object_get(root, "values");
-    if (!json_is_object(values)) {
-        syslog(LOG_ERR, "Invalid 'values' object");
-        json_decref(root);
-        return;
-    }
-
-    // Обработка в зависимости от типа секции
-    switch(sect_type)
-    {
-        case CONFIG_SECTION_DEMON:
-        {
-            // Парсинг глобальных параметров
-            for (size_t i = 0; i < MAX_PARAMS; i++)
-            {
-                const ConfigParamDef *def = &global_param_defs[i];
-                char value_str[MAX_PARAM_VALUE] = {0};
-
-                if (parse_json_param(values, def->name, value_str) == 0) {
-                    global_config[i].value = (int)strtol(value_str, NULL, 10);
-                    syslog(LOG_DEBUG, "Global param %s = %d", def->name, global_config[i].value);
-                } else {
-                    global_config[i].value = def->default_val;
-                    syslog(LOG_WARNING, "Using default for %s: %d", def->name, def->default_val);
-                }
-            }
-            break;
-        }
-    }
-    json_decref(root);
+    return json_loads(response, 0, &error);
 }
 
 json_t* config_get_section(const char* section_name)
 {
-    for (size_t i = 0; i < MAX_PARAMS; i++) {
-        if (strcmp(section_name, global_config[i].name) == 0) {
+    for (size_t i = 0; i < MAX_PARAMS; i++)
+    {
+        if (strcmp(section_name, init_configOptions[i].optionName) == 0)
+        {
             return json_object_get(global_config[i].json_data, "values");
         }
     }
     return NULL;
 }
 
+int config_get_int_param(json_t *values, const char *param_name, int *value) {
+    json_t *param = json_object_get(values, param_name);
+    if (!param || !json_is_string(param)) return -1;
+
+    *value = atoi(json_string_value(param));
+    return 0;
+}
+
+int config_get_str_param(json_t *values, const char *param_name, char *buf, size_t buf_size) {
+    json_t *param = json_object_get(values, param_name);
+    if (!param || !json_is_string(param)) return -1;
+
+    strncpy(buf, json_string_value(param), buf_size - 1);
+    buf[buf_size - 1] = '\0';
+    return 0;
+}
 
 /**
  * @brief Возвращает значение параметра конфигурации
  * @param param_name Имя параметра
  * @return Значение или -1 если не найден
  */
-int config_get_value(const char *param_name) {
-    for (size_t i = 0; i < MAX_PARAMS; i++) {
-        if (strcmp(param_name, global_config[i].name) == 0)
+int config_get_value(const char *param_name)
+{
+    for (size_t i = 0; i < MAX_PARAMS; i++)
+    {
+        if (strcmp(param_name, init_configOptions[i].optionName) == 0)
         {
-            return global_config[i].value;
+            return init_configOptions[i].value;
         }
     }
     return -1;
@@ -186,14 +165,11 @@ void config_log_all_params(void)
 {
     syslog(LOG_INFO, "=== Global Configuration ===");
 
-    for (size_t i = 0; i < MAX_PARAMS; i++) {
-        syslog(LOG_INFO, "Parameter [%s] = %d",
-               global_config[i].name,
-               global_config[i].value);
+    for (size_t i = 0; i < MAX_PARAMS; i++)
+    {
+        syslog(LOG_INFO, "Parameter [%s] = %d", init_configOptions[i].optionName, init_configOptions[i].value);
     }
-    syslog(LOG_INFO, "Main timer: start=%ld, interval=%ds",
-           global_timer.start_time,
-           global_timer.interval);
+    //syslog(LOG_INFO, "Main timer: start = %ld, interval = %d [s]", global_timer.start_time, global_timer.interval);
 }
 
 static int parse_config_from_json(const char *json_str) {
@@ -226,7 +202,37 @@ static int parse_config_from_json(const char *json_str) {
 int config_load_main(void)
 {
     syslog(LOG_DEBUG, "Loading main config...");
-    config_load_section("tf_autorestart", "ar_demon", CONFIG_SECTION_DEMON);
+    json_t *root = config_load_section("tf_autorestart", "ar_demon");
+    if (root == NULL)
+    {
+        syslog(LOG_ERR, "json root not valid");
+        return -1;
+    }
+
+    json_t *values = json_object_get(root, "values");
+    if (values == NULL)
+    {
+        syslog(LOG_ERR, "values not valid");
+        json_decref(root);
+        return -1;
+    }
+
+    for (size_t i = 0; i < MAX_PARAMS; i++)
+    {
+        const ConfigParamDef *def = &global_param_defs[i];
+        char value_str[MAX_PARAM_VALUE] = {0};
+
+        if (parse_json_param(values, def->name, value_str) == 0)
+        {
+            init_configOptions[i].value = (int)strtol(value_str, NULL, 10);
+        } else
+        {
+            init_configOptions[i].value = def->default_val;
+            syslog(LOG_WARNING, "Using default for %s: %d", def->name, def->default_val);
+        }
+    }
+    syslog(LOG_INFO, "Global param set successfully");
+    json_decref(root);
     return 0;
 }
 
@@ -241,10 +247,11 @@ int load_config_from_string(const char *json_str)
 void config_loader_log_state(void)
 {
     syslog(LOG_DEBUG, "=== Config Loader State ===");
-    for (size_t i = 0; i < MAX_PARAMS; i++) {
+    for (size_t i = 0; i < MAX_PARAMS; i++)
+    {
         syslog(LOG_DEBUG, "Parameter %s = %d",
-               global_config[i].name,
-               global_config[i].value);
+               init_configOptions[i].optionName,
+               init_configOptions[i].value);
     }
 }
 
@@ -294,15 +301,8 @@ void config_get_string(const char* section_name, const char* param, char* buffer
 
 void config_init_timer(void)
 {
-    global_timer.start_time = time(NULL);
-    global_timer.interval = config_get_value("test_delay");
-
-    if (global_timer.interval <= 0) {
-        global_timer.interval = 3; // Дефолтное значение
-        syslog(LOG_WARNING, "Using default test_delay: %d",
-               global_timer.interval);
-    }
-    syslog(LOG_INFO, "Timer initialized: interval=%ds",
-           global_timer.interval);
+    //global_timer.start_time = time(NULL);
+    //init_configOptions[MAIN_TIME].value = (int) time(NULL) + init_configOptions[TEST_DELAY].value;
+    //syslog(LOG_ERR, "start_time =  %dd --- time now = %ld", init_configOptions[MAIN_TIME].value, time(NULL));
 }
 

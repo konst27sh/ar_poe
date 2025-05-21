@@ -11,10 +11,10 @@
 //
 //#include "init_module/config_loader.h"
 //
-//typedef  void (*eventHandler_t)(portInfo_t *portInfo, config_type *config);
+//typedef  void (*eventHandler_t)(portInfo_t *portInfo, config_type *portConfigInfo);
 //
-//static void rebootHandler(portInfo_t *portInfo, config_type *config);
-//static void test_ErrorHandler(portInfo_t *portInfo, config_type *config);
+//static void rebootHandler(portInfo_t *portInfo, config_type *portConfigInfo);
+//static void test_ErrorHandler(portInfo_t *portInfo, config_type *portConfigInfo);
 //static void alarmHandler(portInfo_t *portInfo);
 //
 //static void printResult(void);
@@ -38,7 +38,6 @@
 //        {
 //            if  (eventHandler[portInfoArr[index].portResetInfo.state] == NULL)
 //            {
-//                printf("eventsHandler OBJ NOT FOUND\n");
 //            }
 //            else
 //            {
@@ -68,7 +67,7 @@
 //    }
 //}
 //
-//static void rebootHandler(portInfo_t *portInfo, config_type *config)
+//static void rebootHandler(portInfo_t *portInfo, config_type *portConfigInfo)
 //{
 //    uint8_t portNum = portInfo->portConfigInfo.portNum;
 //    //switch (portInfo->portRebootInfo.rebootState)
@@ -79,7 +78,7 @@
 //            if (portInfo->portResetInfo.event & AUTO_RESTART)
 //            {
 //                portInfo->portResetInfo.event &= (~AUTO_RESTART);
-//                autoResetHandler(portNum, config[MAX_RESET].value);
+//                autoResetHandler(portNum, portConfigInfo[MAX_RESET].value);
 //            }
 //
 //            if (portInfo->portResetInfo.event & MANUAL_RESTART)
@@ -149,7 +148,7 @@
 //    }
 //}
 //
-//static void test_ErrorHandler(portInfo_t *portInfo, config_type *config)
+//static void test_ErrorHandler(portInfo_t *portInfo, config_type *portConfigInfo)
 //{
 //    //if (portInfo->portConfigInfo.portNum == 7)
 //    //{
@@ -188,7 +187,7 @@
 //        || portInfo->portResetInfo.errorCode & ERR_TEST_PING)
 //        {
 //            portInfo->portResetInfo.errorTestCount++;
-//            if (portInfo->portResetInfo.errorTestCount >= config[TEST_NUM].value)
+//            if (portInfo->portResetInfo.errorTestCount >= portConfigInfo[TEST_NUM].value)
 //            {
 //                if (portInfo->portResetInfo.state != REBOOT_STATE)
 //                {

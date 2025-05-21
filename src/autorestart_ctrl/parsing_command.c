@@ -24,7 +24,6 @@ uint8_t getCmdType(char *cmd, CMD_TYPE_e *cmdType)
             errorCode = 0;
         }
     }
-    //printf("cmdStr = %s, cmdType = %d\n", cmd, *cmdType);
     return errorCode;
 }
 

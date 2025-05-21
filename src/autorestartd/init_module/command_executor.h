@@ -33,18 +33,5 @@ typedef enum {
  */
 json_t* execute_ubus_command(const char* command_template, const char* arg);
 
-/**
- * @brief Обрабатывает команду управления портом
- * @param port_num Номер порта (0-based)
- * @param cmd_type Тип команды
- * @return 0 при успехе, -1 при ошибке
- */
-int handle_port_command(uint8_t port_num, CommandType cmd_type);
-
-/**
- * @brief Обновляет конфигурацию через UBUS
- * @param section_name Имя секции конфига
- */
-void update_config(const char* section_name);
 
 #endif //TF_AUTORESTART_COMMAND_EXECUTOR_H

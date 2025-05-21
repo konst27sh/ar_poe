@@ -129,8 +129,7 @@ int main(int argc, char **argv)
     openlog("tf_ar_poe", 0, LOG_USER);
     setup_signal_handlers();
     syslog(LOG_INFO, "Autorestart v%s started", VERSION);
-    system_init(argc, argv); // Инициализация системы
-    log_initialized_vars();
+    system_init(); // Инициализация системы
     ar_mainApp();
     pthread_mutex_lock(&shutdownMutex);
     while (keepRunning)

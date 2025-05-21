@@ -36,7 +36,6 @@ CLIENT_STATE clientHandler(int fd)
         isRecivedMsg = 1;
         if (cmdHandler[clientMsg.msg_s.cmdType] == NULL)
         {
-            printf("OBJECT NOT FOUND\n");
         }
         else
         {

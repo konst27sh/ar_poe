@@ -27,7 +27,8 @@ typedef struct
     json_t *json_data;
 }ConfigEntry;
 
-typedef struct {
+typedef struct
+{
     char    *optionName;
     uint8_t value;
 }config_type;
@@ -35,17 +36,21 @@ typedef struct {
 typedef struct {
     time_t start_time;
     int interval;
-} Timer;
+}Timer;
 
 extern Timer global_timer;
 
+json_t* config_load_section(const char *config_name, const char *section_name);
+int config_get_int_param(json_t *values, const char *param_name, int *value);
+int config_get_str_param(json_t *values, const char *param_name, char *buf, size_t buf_size);
+
 int config_load_main(void);
-void config_load_section(const char *config_name, const char *section_name, ConfigSectionType sect_type);
 int config_get_value(const char *param_name);
 void config_loader_log_state(void);
 json_t* config_get_section(const char* section_name);
-
+int parse_json_param(json_t* values, const char* param_name, char* value);
 void config_log_all_params(void);
+
 TestType config_get_test_type(const char* section_name);
 bool_t config_get_bool(const char* section_name, const char* param);
 void config_get_string(const char* section_name, const char* param, char* buffer, size_t buf_size);

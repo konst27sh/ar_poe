@@ -22,6 +22,9 @@
 #define MIN_SPEED           (10)
 #define MAX_SPEED           (1000000)
 
+#define MAX_PARAM_VALUE      16
+
+
 typedef enum
 {
     BOOL_DISABLED  = 0,
