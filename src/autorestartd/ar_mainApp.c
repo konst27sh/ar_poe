@@ -11,7 +11,7 @@
 #include "init_module.h"
 #include "app_control.h"
 
-#include "init_module/port_manager.h"
+#include "port_manager.h"
 #include "init_module/error_handler.h"
 #include "init_module/command_executor.h"
 #include "init_module/error_handler.h"
@@ -76,12 +76,13 @@ void ar_mainApp(void)
 static void* runTestHandler(void *args)
 {
     int test_delay = config_get_value("test_delay");
-    int max_reset = config_get_value("max_reset");
 
     while (keepRunning)
     {
+        syslog(LOG_ALERT, "=============== keepRunning ==================");
         for (uint8_t port = 0; port < NUM_PORTS; port++)
         {
+            syslog(LOG_ALERT, ">>>>>>>>>>> Port %d >>>>>>>>>>>>>>>>>>>>>>>>>>> ", port+1);
             port_config_info_t cfg;
             if (port_manager_get_config(port, &cfg) != 0)
             {
@@ -90,31 +91,32 @@ static void* runTestHandler(void *args)
             }
 
             AR_STATE ar_state = port_manager_get_ar_state(port);
-            syslog(LOG_DEBUG, "ar_state = %d", ar_state);
             if (ar_state != REGULAR_STATE)
             {
-                syslog(LOG_DEBUG, "Port %d: AR State=%d", port + 1, ar_state);
+                syslog(LOG_DEBUG, "ar_state != REGULAR_STATE");
                 continue;
             }
 
-            error_code_t err = ERR_OK;
             switch (cfg.testType)
             {
                 case TEST_LINK:
-                    err = port_run_test_link(port);
+                    port_run_test_link(port);
                     break;
                 case TEST_PING:
-                    err = port_run_test_ping(port);
+                   port_run_test_link(port);
+                   port_run_test_ping(port);
                     break;
                 case TEST_SPEED:
-                    err = port_run_test_speed(port);
+                    port_run_test_link(port);
+                    port_run_test_speed(port);
+                    break;
+                case TEST_DISABLE:
+                    port_run_test_disable(port);
+                    break;
+                case TEST_MAX:
                     break;
             }
-            if (err != ERR_OK)
-            {
-                port_manager_auto_reset(port, err, max_reset);
-                syslog(LOG_INFO, "Port %d: Test failed (Error: 0x%X)", port + 1, err);
-            }
+            syslog(LOG_DEBUG, "Port %d: AR State = %d -- testType = %d", port + 1, ar_state, cfg.testType);
         }
         sleep(test_delay);
     }

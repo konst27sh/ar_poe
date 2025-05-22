@@ -16,6 +16,7 @@
 
 // Приватные константы
 #define UBUS_CMD_TEMPLATE    "ubus call uci get '{\"config\":\"%s\", \"section\":\"%s\"}'"
+#define UBUS_SPEED_TEMPLATE    "ubus call net_stat getStatus '{\"port\":\"lan%d\", \"param\":\"ifInOctets\"}'"
 #define MAX_UBUS_RESPONSE    512
 #define MAX_PARAM_NAME       32
 
@@ -96,6 +97,26 @@ json_t* config_load_section(const char *config_name, const char *section_name)
     FILE *pipe = NULL;
 
     snprintf(cmd, sizeof(cmd), UBUS_CMD_TEMPLATE, config_name, section_name);
+    pipe = popen(cmd, "r");
+    if (!pipe) return NULL;
+
+    char chunk[128];
+    while (fgets(chunk, sizeof(chunk), pipe)) {
+        strncat(response, chunk, sizeof(response) - strlen(response) - 1);
+    }
+    pclose(pipe);
+
+    json_error_t error;
+    return json_loads(response, 0, &error);
+}
+
+json_t* config_load_speed(uint8_t portnum)
+{
+    char cmd[128];
+    char response[32] = {0};
+    FILE *pipe = NULL;
+
+    snprintf(cmd, sizeof(cmd), UBUS_SPEED_TEMPLATE, portnum);
     pipe = popen(cmd, "r");
     if (!pipe) return NULL;
 

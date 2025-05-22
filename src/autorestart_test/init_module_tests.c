@@ -5,7 +5,7 @@
 #include "init_module_tests.h"
 
 #include "../autorestartd/init_module/config_loader.h"
-#include "../autorestartd/init_module/port_manager.h"
+#include "../autorestartd/port_manager.h"
 #include <jansson.h>
 #include <stdio.h>
 #include <assert.h>
@@ -87,7 +87,6 @@ void test_full_init_flow() {
 
     // 3. Проверка состояния
     PortStatus status;
-    port_manager_get_status(0, &status);
     assert(status.poeState == POE_STATE_ON);
 
     printf("[OK] test_full_init_flow\n");

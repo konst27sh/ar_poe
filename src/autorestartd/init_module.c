@@ -4,7 +4,7 @@
  */
 
 #include "init_module.h"
-#include "init_module/port_manager.h"
+#include "port_manager.h"
 #include "init_module/config_loader.h"
 #include "init_module/error_handler.h"
 #include <syslog.h>
@@ -22,7 +22,7 @@ void system_init(void)
     port_manager_init_reboot_info();
     //config_init_timer();
     syslog(LOG_INFO, "System initialized successfully");
-    config_log_all_params();
+    //config_log_all_params();
     port_manager_log_all_configs();
 }
 

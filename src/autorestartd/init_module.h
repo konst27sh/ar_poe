@@ -6,7 +6,7 @@
 #define TF_AR_POE_INIT_MODULE_H
 
 #include "../global_includs.h"
-#include "init_module/port_manager.h"
+#include "port_manager.h"
 
 void system_init(void);
 

@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <jansson.h>
 #include "config_loader.h"
-#include "port_manager.h"
+#include "../port_manager.h"
 
 #define MAX_CMD_LEN     128
 #define MAX_RESPONSE    1024

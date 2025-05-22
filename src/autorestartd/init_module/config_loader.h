@@ -41,6 +41,8 @@ typedef struct {
 extern Timer global_timer;
 
 json_t* config_load_section(const char *config_name, const char *section_name);
+json_t* config_load_speed(uint8_t portnum);
+
 int config_get_int_param(json_t *values, const char *param_name, int *value);
 int config_get_str_param(json_t *values, const char *param_name, char *buf, size_t buf_size);
 
