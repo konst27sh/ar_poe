@@ -18,6 +18,14 @@ struct timer {
     clock_time_t interval;
 };
 
+typedef enum
+{
+    TIME_ERR_OK,
+    TIME_ERR_SYSYTEM,
+    TIME_ERR_CONVERT,
+    TIME_ERR_BUFFER
+}time_error_t;
+
 void setTestMode(char testMode);
 uint8_t* isDebugMode(void);
 void printf_array(uint8_t *buff,uint32_t size);
@@ -33,7 +41,7 @@ int getData_formJson(char* json_data, char *option, char *data);
 void toString(int num, char *str);
 void checkValidIp(char ipStr[], int *ipIsValid);
 int isValidTime(const char* timeString, struct tm * time);
-void getTimeDate(char timeDateStr[32]);
+time_error_t getTimeDate(char *timeDateStr, size_t bufferSize);
 int utils_check_file_exists(const char* path);
 
 #endif //TF_UTILS_MODULE_H

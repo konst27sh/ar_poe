@@ -20,7 +20,7 @@ typedef enum
     ERR_PoE_DISABLE     = 0x02000,
     ERR_IP_NOT_VALID    = 0x01000,
     ERR_TIME_NOT_VALID  = 0x04000
-}error_code_t;
+}utils_error_code_t;
 
 uint8_t globalDebugMode = 0;
 
@@ -157,34 +157,30 @@ const char monthTable[13][WORD_LENGTH] =
     {"December\0"},     //  12
 };
 
-void getTimeDate(char *timeDateStr) {
-    time_t rawtime;
-    struct tm* timeinfo;
-    char dayStr[4];
-    char yearStr[7];
-    char timeStr[11];
-
-    strcpy(dayStr, "");
-    strcpy(yearStr, "");
-    strcpy(timeStr, "");
-    strcpy(timeDateStr, "");
-
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-    int wrByte = sprintf(timeStr,  "%02d:%02d:%02d, ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
-    strcat(timeDateStr, timeStr);
-    wrByte = sprintf(dayStr,  "%d",  (uint16_t)timeinfo->tm_mday );
-    if ((uint16_t)timeinfo->tm_mday < 10)
+time_error_t getTimeDate(char *timeDateStr, size_t bufferSize)
+{
+    const time_t rawtime = time(NULL);
+    if (rawtime == (time_t)-1)
     {
-        strcat(timeDateStr,"0");
+        snprintf(timeDateStr, bufferSize, "N/A");
+        return TIME_ERR_SYSYTEM;
     }
-    strcat(timeDateStr,dayStr);
-    strcat(timeDateStr,"-");
-    strcat(timeDateStr,yearStr);
-    strcat(timeDateStr,monthTable[timeinfo->tm_mon + 1]);
-    wrByte = sprintf(yearStr,  "-%04d",  (uint16_t)timeinfo->tm_year + 1900);
-    strcat(timeDateStr,yearStr);
-    strcat(timeDateStr,"\0");
+    struct tm timeinfo;
+    if (!localtime_r(&rawtime, &timeinfo))
+    {
+        snprintf(timeDateStr, bufferSize, "N/A");
+        return TIME_ERR_CONVERT;
+    }
+
+    // Форматирование: "HH:MM:SS, Mmm-YYYY" (пример: "14:05:23, Dec-2023")
+    const size_t written = strftime(timeDateStr, bufferSize, "%T, %b-%Y", &timeinfo);
+
+    if (written == 0)
+    {
+        snprintf(timeDateStr, bufferSize, "N/A");
+        return TIME_ERR_BUFFER;
+    }
+    return TIME_ERR_OK;
 }
 
 char decimalNum[9][2] = {"0", "1", "2", "3", "4", "5", "6", "7", "8"};
@@ -210,7 +206,8 @@ void checkValidIp(char ipStr[], int *ipIsValid)
     *ipIsValid = flag;
 }
 
-int isValidTime(const char* timeString, struct tm * time) {
+int isValidTime(const char* timeString, struct tm * time)
+{
     int hour   = time->tm_hour;
     int minute = time->tm_min;
 

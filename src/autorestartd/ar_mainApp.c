@@ -116,7 +116,6 @@ static void* runTestHandler(void *args)
                 case TEST_MAX:
                     break;
             }
-            syslog(LOG_DEBUG, "Port %d: AR State = %d -- testType = %d", port + 1, ar_state, cfg.testType);
         }
         sleep(test_delay);
     }
@@ -149,14 +148,10 @@ static void* runComHandler(void *args)
 static void* runEventsHandler(void *args)
 {
     int test_delay = config_get_value("test_delay");
-    //for (int i = 0; i < MAX_PARM; i++)
-    //{
-    //    getConfigOptions(&configOptions[i], i);
-    //}
     while (keepRunning)
     {
-        //eventsHandler();
-        sleep(test_delay*5);
+        eventsHandler();
+        sleep(test_delay);
     }
    return NULL;
 }

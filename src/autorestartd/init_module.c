@@ -19,7 +19,6 @@ void system_init(void)
                        "Main portConfigInfo load failed", __FILE__, __LINE__);
     }
     port_manager_load_config();
-    port_manager_init_reboot_info();
     //config_init_timer();
     syslog(LOG_INFO, "System initialized successfully");
     //config_log_all_params();

@@ -50,6 +50,7 @@ typedef enum
     REBOOT_EVENT_TIMER_STOP   = 0x02,
 }REBOOT_EVENT_e;
 
+
 typedef enum
 {
     PORT_STATE_DISABLED,
@@ -96,6 +97,7 @@ typedef struct
     uint32_t        time_prev;
 
     time_h_m timeAlarm[time_alarm_max];
+    char            timeStr[32];
 }port_config_info_t;
 
 typedef struct
@@ -125,27 +127,18 @@ typedef struct
 
 typedef struct
 {
-    uint8_t         rebootCount;
-    time_t          lastRebootTime;
-    uint32_t        rebootDelay;
-    REBOOT_STATE_e  rebootState;
-}RebootInfo;
-
-typedef struct
-{
     REBOOT_STATE_e  rebootState;
     REBOOT_EVENT_e  rebootEvent;
-    uint32_t        rebootDelay;
-    uint32_t        rebootTimeStart;
+    uint8_t        rebootDelay;
+    time_t         rebootTimeStart;
 }port_reboot_info_t;
 
-typedef struct
+typedef enum
 {
-    uint8_t resetCount;
-    uint8_t totalResetCount;
-    error_code_t errorCode;
-    uint32_t lastTestTime;
-} PortTestInfo;
+    POE_UP      = 0x01,
+    POE_DOWN    = 0x02,
+    POE_RESTART = 0x03
+}POE_CONTROL;
 
 typedef struct
 {
@@ -175,7 +168,6 @@ int port_manager_get_config(uint8_t portNum, port_config_info_t *config);
  */
 void port_manager_load_config(void);
 void port_manager_update_config(uint8_t port_idx, const port_config_info_t* config);
-void port_manager_init_reboot_info(void);
 
 void port_manager_auto_reset(uint8_t portNum, uint8_t maxReset);
 AR_STATE port_manager_get_ar_state(uint8_t portNum);
@@ -187,5 +179,14 @@ void port_run_test_disable(uint8_t portNum);
 
 const char* test_type_to_str(TestType type);
 void port_manager_log_all_configs(void);
+
+int port_manager_get_info(uint8_t portIdx, portInfo_t *info);
+int port_manager_poe_control(uint8_t portNum, POE_CONTROL state);
+int port_manager_update_info(uint8_t portIdx, const portInfo_t *info);
+void autoResetHandler(uint8_t portNum, uint8_t maxReset,  portInfo_t *portInfo);
+void manualResetHandler(uint8_t portNum, portInfo_t *portInfo);
+time_t set_timeStart(uint8_t portIndex);
+REBOOT_EVENT_e get_rebootEvent(uint8_t portnum);
+
 
 #endif //TF_AUTORESTART_PORT_MANAGER_H

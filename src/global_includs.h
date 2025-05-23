@@ -15,7 +15,7 @@
 #include "time.h"
 
 #define VERSION             ("1.0.0")
-#define NUM_PORTS           (8)
+#define NUM_PORTS           (1)
 #define OUTPUT_MAX_LENGTH   (64)
 #define WORD_LENGTH         (10)
 
