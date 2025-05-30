@@ -16,18 +16,18 @@
 #include "init_module/command_executor.h"
 #include "init_module/error_handler.h"
 
-static void* runTestHandler(void *args);
+static void runTestHandler(void);
 static void* runComHandler(void *args);
-static void* runEventsHandler(void *args);
+static void runEventsHandler(void);
 
 #define THREADS_NUM (3)
 
-mainThreads_t ar_mainThreads[] =
-{
-    &runTestHandler,
-    &runComHandler,
-    &runEventsHandler
-};
+//mainThreads_t ar_mainThreads[] =
+//{
+//    &runTestHandler,
+//    &runComHandler,
+//    &runEventsHandler
+//};
 
 //void ar_mainInit(int argc, char **argv)
 //{
@@ -58,22 +58,24 @@ mainThreads_t ar_mainThreads[] =
 
 void ar_mainApp(void)
 {
-    uint8_t p_err = createThread(THREADS_NUM, ar_mainThreads);
-    if (p_err != 0)
-    {
-        error_register(ERR_CREATE_THREAD, ERR_LEVEL_CRITICAL,
-                       "Thread creation failed", __FILE__, __LINE__);
-        return;
-    }
-    p_err = joinThread(THREADS_NUM);
-    if (p_err != 0)
-    {
-        error_register(ERR_CREATE_THREAD, ERR_LEVEL_CRITICAL,
-                       "Thread joinThread", __FILE__, __LINE__);
-    }
+    //uint8_t p_err = createThread(THREADS_NUM, ar_mainThreads);
+    //if (p_err != 0)
+    //{
+    //    error_register(ERR_CREATE_THREAD, ERR_LEVEL_CRITICAL,
+    //                   "Thread creation failed", __FILE__, __LINE__);
+    //    return;
+    //}
+    //p_err = joinThread(THREADS_NUM);
+    //if (p_err != 0)
+    //{
+    //    error_register(ERR_CREATE_THREAD, ERR_LEVEL_CRITICAL,
+    //                   "Thread joinThread", __FILE__, __LINE__);
+    //}
+    runTestHandler();
+
 }
 
-static void* runTestHandler(void *args)
+static void runTestHandler(void)
 {
     int test_delay = config_get_value("test_delay");
 
@@ -117,9 +119,10 @@ static void* runTestHandler(void *args)
                     break;
             }
         }
+        eventsHandler();
         sleep(test_delay);
     }
-    return NULL;
+    //return NULL;
 }
 
 static void* runComHandler(void *args)
@@ -145,7 +148,7 @@ static void* runComHandler(void *args)
     return NULL;
 }
 
-static void* runEventsHandler(void *args)
+static void runEventsHandler(void)
 {
     int test_delay = config_get_value("test_delay");
     while (keepRunning)
@@ -153,7 +156,7 @@ static void* runEventsHandler(void *args)
         eventsHandler();
         sleep(test_delay);
     }
-   return NULL;
+   //return NULL;
 }
 
 

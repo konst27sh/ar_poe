@@ -10,57 +10,69 @@
 #include "init_module/error_handler.h"
 #include "utils_lib/utils_module.h"
 
-static port_config_info_t portConfigs[NUM_PORTS];
-static port_state_info_t portState[NUM_PORTS];
-static port_reboot_info_t portRebootInfo[NUM_PORTS];
-static port_reset_info_t portResetInfo[NUM_PORTS];
+port_config_info_t portConfigs[NUM_PORTS];
+port_state_info_t portState[NUM_PORTS];
+port_reboot_info_t portRebootInfo[NUM_PORTS];
+port_reset_info_t portResetInfo[NUM_PORTS];
+
+uint32_t  rebootTimeStart;
 
 static int parse_time_string(const char* time_str, time_h_m* out);  // todo
 void set_errorHandler(uint8_t index, portInfo_t *portInfo);
 
 void port_manager_init(void)
 {
-    memset(portConfigs, 0, sizeof(port_config_info_t));
-    memset(portState, 0, sizeof(port_state_info_t));
-    memset(portRebootInfo, 0, sizeof(port_reboot_info_t));
-    memset(portResetInfo, 0, sizeof(port_reset_info_t));
+    printf("addr 1:      %p\n", (void*)&portRebootInfo);
+
+    memset(portConfigs, 0, sizeof(portConfigs));
+    memset(portState, 0, sizeof(portState));
+    memset(portRebootInfo, 0, sizeof(portRebootInfo));
+    memset(portResetInfo, 0, sizeof(portResetInfo));
+
+    printf("addr 2:      %p\n", (void*)&portRebootInfo);
+
+    printf("sizeof(portRebootInfo) = %lu -- sizeof(port_reboot_info_t) = %lu\n", sizeof(portRebootInfo), sizeof(port_reboot_info_t));
 
     for (uint8_t i = 0; i < NUM_PORTS; i++)
     {
-        portConfigs[i] = (port_config_info_t)
-        {
-            .portNum            = i + 1,
-            .isInit             = 1,
-            .time_current       = time(NULL),
-            .rx_delta_byte      = 0,
-            .rx_byte_prev       = 0,
-            .rx_byte_current    = 0,
-            .rx_speed_Kbit      = 0,
-            .time_prev          = 0,
-        };
 
-        portState[i] = (port_state_info_t)
-        {
-            .port_state = PORT_STATE_DISABLED,
-            .poe_state = PoE_STATE_DISABLED,
-        };
 
-        portResetInfo[i] = (port_reset_info_t)
-        {
-            .errorCode        = ERR_OK,
-            .resetCount       = 0,
-            .errorTestCount   = 0,
-            .state            = REGULAR_STATE,
-            .event            = IDLE_EVENT,
-        };
+         portConfigs[i].portNum            = i + 1,
+         portConfigs[i].isInit             = 1,
+         portConfigs[i].time_current       = time(NULL),
+         portConfigs[i].rx_delta_byte      = 0,
+         portConfigs[i].rx_byte_prev       = 0,
+         portConfigs[i].rx_byte_current    = 0,
+         portConfigs[i].rx_speed_Kbit      = 0,
+         portConfigs[i].time_prev          = 0,
+       
+        portState[i].port_state = PORT_STATE_DISABLED,
+        portState[i].port_state = PORT_STATE_DISABLED,
 
-        portRebootInfo[i] = (port_reboot_info_t)
-        {
-            .rebootState     = REBOOT_STATE_IDLE,
-            .rebootEvent     = REBOOT_EVENT_IDLE,
-            .rebootDelay     = 11,
-            .rebootTimeStart = 0,
-        };
+        portResetInfo[i].errorCode        = ERR_OK,
+        portResetInfo[i].resetCount       = 0,
+        portResetInfo[i].errorTestCount   = 0,
+        portResetInfo[i].state            = REGULAR_STATE,
+        portResetInfo[i].event            = IDLE_EVENT,
+
+        portRebootInfo[i] .rebootState     = REBOOT_STATE_INIT,
+        portRebootInfo[i] .rebootEvent     = REBOOT_EVENT_START,
+        portRebootInfo[i] .rebootDelay     = 7,
+
+        printf("rebootState = %x -- ", portRebootInfo[i].rebootState);
+        printf("rebootEvent = %x -- ", portRebootInfo[i].rebootEvent);
+        printf("rebootDelay = %x\n", portRebootInfo[i].rebootDelay);
+
+        printf("addr 3:      %p\n", (void*)&portRebootInfo);
+
+        //const unsigned char* bytes = (const unsigned char*)portRebootInfo[i];
+        //size_t struct_size = sizeof(port_reboot_info_t);
+        //
+        //printf("Byte-by-byte representation of port_reboot_info_t (%zu bytes):\n", struct_size);
+        //
+        //for (size_t j = 0; j < struct_size; j++) {
+        //    printf("Byte %02zu: 0x%02X\n", j, bytes[i]);
+        //}
     }
     syslog(LOG_INFO, "Port manager initialized");
 }
@@ -450,30 +462,34 @@ int port_manager_get_info(uint8_t portIdx, portInfo_t *info)
     memcpy(&info->portResetInfo, &portResetInfo[portIdx], sizeof(port_reset_info_t));
     memcpy(&info->portRebootInfo, &portRebootInfo[portIdx], sizeof(port_reboot_info_t));
     memcpy(&info->portStateInfo, &portState[portIdx], sizeof(port_state_info_t));
-
-    printf("get_info  1 portIdx =  %d -- rebootDelay = %u -- timeStart = %lu\n",
-           portIdx, portRebootInfo[portIdx].rebootDelay, portRebootInfo[portIdx].rebootTimeStart);
-    printf("get_info  2 portIdx =  %d -- rebootDelay = %u -- timeStart = %lu\n",
-           portIdx, info->portRebootInfo.rebootDelay, info->portRebootInfo.rebootTimeStart);
+    printf("addr 7:      %p\n", (void*)&portRebootInfo[portIdx]);
+    printf("addr 8:      %p\n", (void*)&info->portRebootInfo);
+    printf("get_info  1 portIdx =  %d -- rebootDelay = %d\n",
+           portIdx, portRebootInfo[portIdx].rebootDelay);
+    printf("get_info  2 portIdx =  %d -- rebootDelay = %d\n",
+           portIdx, info->portRebootInfo.rebootDelay);
     return 0;
 }
 
-int port_manager_update_info(uint8_t portIdx, const portInfo_t *info) {
-    if (portIdx >= NUM_PORTS || info == NULL) {
+int port_manager_update_info(uint8_t portIdx, const portInfo_t *info)
+{
+    if (portIdx >= NUM_PORTS || info == NULL)
+    {
         error_register(ERR_UNAVAILABLE_RESOURCE, ERR_LEVEL_WARNING,
                        "Invalid port index in update_info", __FILE__, __LINE__);
         return -1;
     }
 
-    memcpy(&portConfigs[portIdx], &info->portConfigInfo, sizeof(port_config_info_t));
-    memcpy(&portResetInfo[portIdx], &info->portResetInfo, sizeof(port_reset_info_t));
-    memcpy(&portRebootInfo[portIdx], &info->portRebootInfo, sizeof(port_reboot_info_t));
-    memcpy(&portState[portIdx], &info->portStateInfo, sizeof(port_state_info_t));
-
-    printf("update_info 1 portIdx =  %d -- rebootDelay = %u -- timeStart = %lu\n",
-           portIdx, info->portRebootInfo.rebootDelay, info->portRebootInfo.rebootTimeStart);
-    printf("update_info 2 portIdx =  %d -- rebootDelay = %u -- timeStart = %lu\n",
-           portIdx, portRebootInfo[portIdx].rebootDelay, portRebootInfo[portIdx].rebootTimeStart);
+    memcpy(&portConfigs[portIdx], &info->portConfigInfo, sizeof(portConfigs));
+    memcpy(&portResetInfo[portIdx], &info->portResetInfo, sizeof(portResetInfo));
+    memcpy(&portRebootInfo[portIdx], &info->portRebootInfo, sizeof(portRebootInfo));
+    memcpy(&portState[portIdx], &info->portStateInfo, sizeof(portState));
+    printf("addr 10:      %p\n", (void*)&info->portRebootInfo);
+    printf("addr 11:      %p\n", (void*)&portRebootInfo[portIdx]);
+    printf("update_info 1 portIdx =  %d -- rebootDelay = %u\n",
+           portIdx, info->portRebootInfo.rebootDelay);
+    printf("update_info 2 portIdx =  %d -- rebootDelay = %u\n",
+           portIdx, portRebootInfo[portIdx].rebootDelay);
     return 0;
 }
 
@@ -562,29 +578,31 @@ void set_errorHandler(uint8_t index, portInfo_t *portInfo)
     }
 }
 
-time_t set_timeStart(uint8_t portnum)
+uint32_t set_timeStart(portInfo_t *portInfo)
 {
-    uint8_t portIndex = portnum - 1;
-    portRebootInfo[portIndex].rebootTimeStart = (time_t) (time(NULL) + portRebootInfo[portIndex].rebootDelay);
-    printf("rebootDelay = %d  port = %d\n",portRebootInfo[portIndex].rebootDelay, portIndex);
-    printf("time now = %ld -- rebootTimeStart = %lu\n", time(NULL), portRebootInfo[portIndex].rebootTimeStart);
-    return portRebootInfo[portIndex].rebootTimeStart;
+    uint8_t portIndex = portInfo->portConfigInfo.portNum - 1;
+    rebootTimeStart =  (time(NULL) + portInfo->portRebootInfo.rebootDelay);
+    printf("rebootDelay = %d  port = %d\n", portInfo->portRebootInfo.rebootDelay, portInfo->portConfigInfo.portNum);
+    printf("time now = %ld -- rebootTimeStart = %d\n", time(NULL), rebootTimeStart);
+    return (time(NULL) + portInfo->portRebootInfo.rebootDelay);
 }
 
-REBOOT_EVENT_e get_rebootEvent(uint8_t portnum)
+REBOOT_EVENT_e get_rebootEvent(portInfo_t *portInfo)
 {
-    uint8_t portIndex = portnum - 1;
-    if (time(NULL) < portRebootInfo[portIndex].rebootTimeStart)
+    uint8_t portIndex = portInfo->portConfigInfo.portNum - 1;
+    if (time(NULL) < rebootTimeStart)
     {
-        time_t delta = portRebootInfo[portIndex].rebootTimeStart - time(NULL);
-        printf("TIME REMAIN %ld\n", delta);
-        printf("---> time now = %ld -- rebootTimeStart = %ld\n", time(NULL),
-                portRebootInfo[portIndex].rebootTimeStart);
+        if (rebootTimeStart > time(NULL))
+        {
+            uint8_t delta = rebootTimeStart - time(NULL);
+            printf("TIME REMAIN %d\n", delta);
+        }
+        printf("---> time now = %ld -- rebootTimeStart = %d\n", time(NULL),
+               rebootTimeStart);
     }
-    if (time(NULL) >= portRebootInfo[portIndex].rebootTimeStart)
+    if (time(NULL) >= rebootTimeStart)
     {
-        printf("EVENT ---> time now = %ld -- rebootTimeStart = %lu\n", (unsigned long) time(NULL),
-               (unsigned long) portRebootInfo[portIndex].rebootTimeStart);
+        printf("EVENT ---> time now = %ld -- rebootTimeStart = %d\n", time(NULL), rebootTimeStart);
         return REBOOT_EVENT_TIMER_STOP;
     }
     else

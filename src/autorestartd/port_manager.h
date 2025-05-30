@@ -125,13 +125,14 @@ typedef struct
     uint32_t    txBytes;
 }PortStatus;
 
+#pragma pack(push,1)
 typedef struct
 {
     REBOOT_STATE_e  rebootState;
     REBOOT_EVENT_e  rebootEvent;
-    uint8_t        rebootDelay;
-    time_t         rebootTimeStart;
+    uint8_t         rebootDelay;
 }port_reboot_info_t;
+#pragma pack(pop)
 
 typedef enum
 {
@@ -185,8 +186,8 @@ int port_manager_poe_control(uint8_t portNum, POE_CONTROL state);
 int port_manager_update_info(uint8_t portIdx, const portInfo_t *info);
 void autoResetHandler(uint8_t portNum, uint8_t maxReset,  portInfo_t *portInfo);
 void manualResetHandler(uint8_t portNum, portInfo_t *portInfo);
-time_t set_timeStart(uint8_t portIndex);
-REBOOT_EVENT_e get_rebootEvent(uint8_t portnum);
+uint32_t set_timeStart(portInfo_t *portInfo);
+REBOOT_EVENT_e get_rebootEvent(portInfo_t *portInfo);
 
 
 #endif //TF_AUTORESTART_PORT_MANAGER_H

@@ -38,7 +38,9 @@ void eventsHandler(void)
     for (uint8_t portIdx = 0; portIdx < NUM_PORTS; portIdx++)
     {
         portInfo_t portInfo;
+        printf("addr 4:      %p\n", (void*)&portInfo.portRebootInfo);
         if (port_manager_get_info(portIdx, &portInfo) != 0) continue;
+
 
         syslog(LOG_DEBUG, "port = %d -- State = %x -- %d", portIdx + 1, portInfo.portResetInfo.state, portInfo.portResetInfo.state);
         printf("====================================== rebootDelay = %d\n", portInfo.portRebootInfo.rebootDelay);
@@ -117,10 +119,11 @@ static void rebootHandler(portInfo_t *portInfo)
                 portInfo->portRebootInfo.rebootEvent &= (~REBOOT_EVENT_START);
                 //poe_Control(portNum, POE_DOWN);
                 syslog(LOG_INFO, "REBOOT STATE POE_DOWN , port - %d", portInfo->portConfigInfo.portNum);
-                portInfo->portRebootInfo.rebootTimeStart = set_timeStart(portInfo->portConfigInfo.portNum);
+                uint32_t  time_startReboot = set_timeStart(portInfo);
+                printf("time_startReboot = %d\n", time_startReboot);
             }
 
-            portInfo->portRebootInfo.rebootEvent = get_rebootEvent(portInfo->portConfigInfo.portNum);
+            portInfo->portRebootInfo.rebootEvent = get_rebootEvent(portInfo);
 
             if (portInfo->portRebootInfo.rebootEvent & REBOOT_EVENT_TIMER_STOP)
             {
@@ -271,7 +274,6 @@ static void printResult(portInfo_t *portInfo)
         printf("\n*********************************************\n");
         printf("reboot Event      = %x -- %s\n", portInfo->portRebootInfo.rebootEvent, reboot_event_str[portInfo[port].portRebootInfo.rebootEvent]);
         printf("reboot State      = %d -- %s\n", portInfo->portRebootInfo.rebootState, reboot_state_str[portInfo[port].portRebootInfo.rebootState]);
-        printf("reboot TimeStart  = %ld\n", portInfo->portRebootInfo.rebootTimeStart);
         printf("reboot Delay      = %u\n", portInfo->portRebootInfo.rebootDelay);
     }
     //set_notRecivedMsg();
